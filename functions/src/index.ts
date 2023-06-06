@@ -9,6 +9,7 @@
 
 import {onRequest} from "firebase-functions/v2/https";
 import * as admin from 'firebase-admin';
+import { document } from "firebase-functions/v1/firestore";
 // el sdk de admin necesita ser inicializado primero.
 // se usa para obtener los documentos que queremos.
 admin.initializeApp();
@@ -40,3 +41,40 @@ export const getBostonWeather = onRequest((request, response) => {
     response.status(500).send(error);
   })
 });
+
+// Learn javascript promises with firestore trigger
+/* se debe mostrar una promesa que se convierte en cumplida o rechazada
+cuando concluye todo el trabajo pendiente de esa función
+eso le hace saber a CF el momento mas seguro para limpiar la invocación
+de la función y continuar con la siguiente.  */
+
+// funcion que se activa siempre que ese documento se actualice con datos nuevos.
+export const onBostonWeatherUpdate = 
+    document("cities-weather/boston-ma-us").onUpdate(change => {
+        // el parametro change, describe la actualización
+        // tiene dos propiedades: before y after.
+
+        /* obtenemos los contenidos del documento despues del cambio.
+        la propiedad after es un snapshot del documento con los contenidos
+        actualizados de ese documento.
+        Usamos el metodo data para convertirlo a un objeto javascript */
+        const after = change.after.data()
+        // contruimos un objeto payload
+        const payload = {
+            data: {
+                temp: String(after.temp),
+                conditions: after.conditions
+            }
+        }
+        /* usamos el admin para notificar y lo retornamos.
+         ya que sendToTopic devuelve una promesa y lo estamos retornando
+         cumplimos la condición de terminar la función con una promesa. */
+        return admin.messaging().sendToTopic("weather-boston-ma-us", payload)
+        .catch((error) => {
+            console.log("FMC failed", error);
+        })
+        /* no es necesario el catch porque CF ya detectará si falla la promesa
+        del sendToTopic*/
+        
+    })
+    

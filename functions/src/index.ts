@@ -19,10 +19,10 @@ admin.initializeApp();
 
 export const getBostonWeather = onRequest((request, response) => {
   // Obtener el snapshot del documento del clima de Boston
-  const promise = admin.firestore().doc("cities.weather/boston-ma-us").get();
+  admin.firestore().doc("cities.weather/boston-ma-us").get()
   // las promesas tienen un metodo llamado then, permite que tu codigo siga al
   // cumplirse la promesa con los resultados del trabajo que acaba de terminar.
-  const p2 = promise.then((snapshot) => {
+  .then((snapshot) => {
     // tomamos el snapshot y lo convertimos en un objeto de javascript.
     const data = snapshot.data();
     // y con eso, enviaremos su representación al cliente.
@@ -32,7 +32,7 @@ export const getBostonWeather = onRequest((request, response) => {
     //Que pasa si esta promesa es rechazada con un error?
 
   })// atraparemos lo que sea que salga mal con el metodo get de firestore
-  p2.catch((error) => {
+  .catch((error) => {
     // handle error
     // mostramos el error
     console.log(error);

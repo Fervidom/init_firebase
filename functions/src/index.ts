@@ -164,7 +164,7 @@ onRequest( async (request, response) => {
   }
 }); 
 
-// onCreate
+// TRIGGER onCreate
 export const onMessageCreate = functions.database
 // usaremos ref para decirle que responda todos los cambios en esa ruta. 
 // los que estan dentro de {}, haran match con cualquier nodo child en la ruta. COMODINES
@@ -197,3 +197,35 @@ export const onMessageCreate = functions.database
 function addPizzazz(text: string): string{
   return text.replace(/\bpizza\b/g,'🍕')
 }
+
+// trigger onUpdate
+/* Es similar al anterior pero tiene un objeto change en lugar de snapshot. Ambos objetos estan parametrizados de tipo
+DataSnapShot*/
+export const onMessageEdit = functions.database
+.ref('/rooms/{roomId}/messages/{messageId}')
+.onUpdate((change, context) => {
+  /* Con update debemos tener cuidado, pues actualizar el documento al final, puede hacer que el disparador se vuelva 
+  a lanzar creando un ciclo infinito que puede costar mucho dinero. */ 
+  /* Para manejar esto, necesitamos comparar el message text en los snapshots de before y after.*/
+  
+  // obtenemos el objeto despues de su actualizacion
+  const before = change.before.val( )
+  // obtenemos el objeto despues de su actualizacion
+  const after = change.after.val();
+
+  /* comparemos si el text fue cambiado o tiene un cambio.
+   Si los textos son iguales, no hay cambio por lo cual no debemos hacer nada mas que salir de la funcion
+   retornando un null. */
+  if(before.text == after.text){
+    console.log('Text didnt change | el texto no cambio');
+    return null
+  }
+
+  // transformamos en una constante usando la funcion anterior 
+  const text = addPizzazz(after.text);
+  // agregaremos la fecha tambien.
+  const timeEdited = Date.now();
+  // usamos ref del after para escribir en la base de datos
+  return change.after.ref.update({text, timeEdited});
+  // agregamos el return a la promise desde la funcion. Asi cloud functions esperara a que todo termine antes de hacer un cleaning up.
+})

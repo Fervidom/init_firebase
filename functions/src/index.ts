@@ -170,7 +170,7 @@ export const onMessageCreate = functions.database
 // los que estan dentro de {}, haran match con cualquier nodo child en la ruta. COMODINES
 .ref('/rooms/{roomId}/messages/{messageId}')
 // ya que este es codigo a ejecutarse siempre que se crea un nuevo nodo usaremos oncreate trigger
-.onCreate( (snapshot, context) => {
+.onCreate( async (snapshot, context) => {
   // el objeto context contiene propiedades con el mismo nombre que los comodines de las {} 
   const roomId = context.params.roomId;
   const messageId = context.params.messageId;
@@ -191,14 +191,27 @@ export const onMessageCreate = functions.database
    /*usamos el metodo update al que le pasamos un objeto con los children que queremos actualizar. Es un metodo asincrono.
     agregamos el return para indicar que es lo ultimo a hacer regresar la promesa siguiendo la regla, esto esperara hasta 
     que la promesa se resuelva*/
-  return snapshot.ref.update({ text: text })
+
+  // cambiamos a await en lugar de return. para pausar el codigo hasta que la actualización se complete.
+  await  snapshot.ref.update({ text: text })
+  
+  /* construimos una referencia a la locacion de contador en la base de datos. que apuntara a la locacion del nodo 
+  que fue creado -> snapshot.ref. Despues nos vamos dos nodos arriba en el arbol usando la propiedad parent de la referencia. Es decir
+  la referencia apunta a /rooms/{roomId} -> snapshot.ref.parent?.parent.
+  Despues necesitamos el conteo de mensajes child debajo de esta location. Usamos el metodo child*/
+  const countRef = snapshot.ref.parent?.parent?.child('messageCount');
+  /* El valor referenciado en countRef es lo que quiero leer incrementar y escribir.
+  Usaremos el metodo transaction para hacer esa transacción. requiere una funcion de actualización.*/
+  return countRef?.transaction(count => {
+    return count + 1; 
+  });
 })
 
 function addPizzazz(text: string): string{
   return text.replace(/\bpizza\b/g,'🍕')
 }
 
-// trigger onUpdate
+// TRIGGER onUpdate
 /* Es similar al anterior pero tiene un objeto change en lugar de snapshot. Ambos objetos estan parametrizados de tipo
 DataSnapShot*/
 export const onMessageEdit = functions.database
@@ -228,4 +241,14 @@ export const onMessageEdit = functions.database
   // usamos ref del after para escribir en la base de datos
   return change.after.ref.update({text, timeEdited});
   // agregamos el return a la promise desde la funcion. Asi cloud functions esperara a que todo termine antes de hacer un cleaning up.
+})
+
+// TRIGGER onDelete
+export const onMessageDelete = functions.database
+.ref('/rooms/{roomId}/messages/{messageId}')
+.onDelete( async (snapshot, context) => {
+  const countRef = snapshot.ref.parent?.parent?.child('messageCount');
+  return countRef?.transaction(count => {
+    return count - 1; 
+  });
 })

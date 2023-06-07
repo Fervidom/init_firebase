@@ -115,3 +115,11 @@ onRequest((request, response) => {
     response.status(500).send(error);
   })
 }); 
+
+// Async and Await how do they work
+
+/* async: para declarar una funcion que siempre regresa una promesa, que se debe resolver
+cuando el trabajo del background este completo 
+await: para pausar la ejecución de una funcion async hasta que otras promesas con completadas
+o rechazadas. */
+

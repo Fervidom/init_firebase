@@ -99,6 +99,7 @@ onRequest((request, response) => {
       const p = admin.firestore().doc(`cities-weather/${city}`).get()
       promises.push(p);
     }
+    // creamos una nueva promesa que se cumplira cuando todas las de adentro del array se cumplan.
     return Promise.all(promises)
   })
   .then(citySnapshots => {
@@ -123,3 +124,41 @@ cuando el trabajo del background este completo
 await: para pausar la ejecución de una funcion async hasta que otras promesas con completadas
 o rechazadas. */
 
+export const getBostonWeatherRefactor = onRequest( async (request, response) => {
+  try {
+    const  snapshot = await admin.firestore().doc("cities.weather/boston-ma-us").get()
+    const data = snapshot.data();
+    response.send(data);
+  } catch (error) {
+    console.log(error);
+    response.status(500).send(error);
+  }
+  /* con el refactor nos deshicimos de los bloques de codigo que usaban .then*/
+});
+
+// onBostonWeatherUpdate  no es necesario refactorizarla pues async y await no haria diferencia
+// ya que no usamos los resultados de la ultima promesa usada.
+
+export const getBostonAreaWeatherRefactor =
+onRequest( async (request, response) => {
+  try {
+    const areaSnapshot = await admin.firestore().doc('areas/grater-bostos').get();
+    const cities = areaSnapshot.data()!.cities
+    const promises = [];
+    for(const city in cities){
+      const p = admin.firestore().doc(`cities-weather/${city}`).get()
+      promises.push(p);
+    }
+    const citySnapshots = await Promise.all(promises)
+    const results = [];
+    citySnapshots.forEach(citySnap => {
+      const data = citySnap.data();
+      data.city = citySnap.id
+      results.push(data);
+    })
+    response.send(results);
+  } catch (error) {
+    console.log(error);
+    response.status(500).send(error);
+  }
+}); 

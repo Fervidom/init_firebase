@@ -10,6 +10,7 @@
 import {onRequest} from "firebase-functions/v2/https";
 import * as admin from 'firebase-admin';
 import { document } from "firebase-functions/v1/firestore";
+import * as functions from 'firebase-functions';
 // el sdk de admin necesita ser inicializado primero.
 // se usa para obtener los documentos que queremos.
 admin.initializeApp();
@@ -162,3 +163,37 @@ onRequest( async (request, response) => {
     response.status(500).send(error);
   }
 }); 
+
+// onCreate
+export const onMessageCreate = functions.database
+// usaremos ref para decirle que responda todos los cambios en esa ruta. 
+// los que estan dentro de {}, haran match con cualquier nodo child en la ruta. COMODINES
+.ref('/rooms/{roomId}/messages/{messageId}')
+// ya que este es codigo a ejecutarse siempre que se crea un nuevo nodo usaremos oncreate trigger
+.onCreate( (snapshot, context) => {
+  // el objeto context contiene propiedades con el mismo nombre que los comodines de las {} 
+  const roomId = context.params.roomId;
+  const messageId = context.params.messageId;
+  console.log(`New message ${messageId} in room ${roomId}`);
+
+  // para obtener los datos, de la base de datos, que se agregaron a esta ubicación, usar obeto snapshot
+  // tiene un metodo llamado val que tiene una copia de los datos raw como un objeto de JS
+  // val tendra los mismos nombres de propiedades que la base.
+  const messageData = snapshot.val();
+  const text = addPizzazz(messageData.text);
+
+  /* ya que tenemos el nuevo texto, lo escribiremos de vuelta en la base de datos
+   usaremos el objeto snapshot y ref, que es un objeto de tipo referencia y tiene acceso administrador a la base de datos
+   señala la ubicación emparejada por el patron dado el metodo ref en la definición de la funcion 
+   '/rooms/{roomId}/messages/{messageId}'.
+   Puedes usarlo para leer y escribir la base de datos en esa ubicación o construir mas referencias a otras ubicaciones.*/
+
+   /*usamos el metodo update al que le pasamos un objeto con los children que queremos actualizar. Es un metodo asincrono.
+    agregamos el return para indicar que es lo ultimo a hacer regresar la promesa siguiendo la regla, esto esperara hasta 
+    que la promesa se resuelva*/
+  return snapshot.ref.update({ text: text })
+})
+
+function addPizzazz(text: string): string{
+  return text.replace(/\bpizza\b/g,'🍕')
+}

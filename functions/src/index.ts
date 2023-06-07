@@ -77,4 +77,41 @@ export const onBostonWeatherUpdate =
         del sendToTopic*/
         
     })
-    
+
+// ADVANCED PROGRAMMING WITH JS PROMISES FOR CLOUD FUNCTIONS FOR FIREBASE
+
+export const getBostonAreaWeather =
+onRequest((request, response) => {
+  // obtener el documento deseado. El metodo get: regresa una promesa.
+  admin.firestore().doc('areas/grater-bostos').get()
+  .then(areaSnapshot => {
+    // convertir el snapshot en un objeto JS y acceder a las ciudades
+    // array de ids de ciudades
+    const cities = areaSnapshot.data()!.cities
+    // crear arreglo de promesas
+    const promises = [];
+    // iterar el arreglo 
+    for(const city in cities){
+      // construir una referencia a cada ciudad que necesito leer
+      // cada una de estas llamadas regresa una promesa
+      // debemos esperar a que cada una termine y luego obtener esos datos
+      // para enviarlos al cliente. 
+      const p = admin.firestore().doc(`cities-weather/${city}`).get()
+      promises.push(p);
+    }
+    return Promise.all(promises)
+  })
+  .then(citySnapshots => {
+    const results = [];
+    citySnapshots.forEach(citySnap => {
+      const data = citySnap.data();
+      data.city = citySnap.id
+      results.push(data);
+    })
+    response.send(results);
+  })
+  .catch(error => {
+    console.log(error);
+    response.status(500).send(error);
+  })
+}); 

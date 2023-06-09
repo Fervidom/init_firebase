@@ -252,3 +252,5 @@ export const onMessageDelete = functions.database
     return count - 1; 
   });
 })
+
+// este es un comentario para comprobar el sign en los commits.

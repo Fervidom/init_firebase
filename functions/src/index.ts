@@ -254,3 +254,9 @@ export const onMessageDelete = functions.database
 })
 
 // este es un comentario para comprobar el sign en los commits.
+// al usar una propiedad de objeto que en firebase es tipo REFERENCE,
+// se debe usar la propiedad path para tomarlo como string y usarlo
+// p.e. "prop_ref" + propertyShown.prop_ref.path
+// al imprimir eso obtendremos "properties/iddelapropiedad"
+// de lo contrario, si no usamos .path obtendremos Object object y 
+// ese objeto no se puede usar como string. 

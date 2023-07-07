@@ -259,4 +259,5 @@ export const onMessageDelete = functions.database
 // p.e. "prop_ref" + propertyShown.prop_ref.path
 // al imprimir eso obtendremos "properties/iddelapropiedad"
 // de lo contrario, si no usamos .path obtendremos Object object y 
-// ese objeto no se puede usar como string. 
+// ese objeto no se puede usar como string.
+// actualizar indexes de firebase con cada filtro.
